@@ -1,0 +1,96 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEMSIRA Scanner</title><link rel="icon" href="semsira.png"><style>
+:root{--g:#0f5c4d;--ink:#14231f;--bg:#f4f7f6;--line:#d5dfdb;--p:#1b7f4b;--l:#a85f00;--a:#b3261e}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+header{background:var(--g);color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center}
+header img{height:40px}header h1{font-size:1.1rem;margin:0;flex:1}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
+header a{color:#fff;text-decoration:none;padding:.4rem .7rem;border-radius:6px}header a:hover,a:focus-visible{background:#ffffff30}
+main{max-width:1100px;margin:auto;padding:1rem}section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
+h2{margin:.2rem 0 .8rem;font-size:1.2rem}label{display:block;font-weight:600;margin:.6rem 0 .2rem}
+input,select,button{font:inherit;min-height:44px;padding:.4rem .6rem;border:1px solid #9bb0a9;border-radius:6px;max-width:100%}input,select{width:100%}
+button{background:var(--g);color:#fff;border:0;cursor:pointer;width:auto}button.sec{background:#e3ece9;color:var(--ink)}button.del{background:var(--a)}
+:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:end}.row>*{flex:1 1 150px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:.4rem .6rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.PRESENT{color:var(--p);font-weight:700}.LATE{color:var(--l);font-weight:700}.ABSENT{color:var(--a);font-weight:700}
+#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:8px;color:#fff;display:none;z-index:9}
+dialog{max-width:92vw;width:480px;border:0;border-radius:10px;padding:1.2rem}dialog::backdrop{background:#0008}
+.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;background:#e3ece9}
+</style></head><body>
+<header><img src="semsira.png" alt="SEMSIRA"><h1>SEMSIRA Attendance Scanner</h1><button class="sec" id="setBtn">Settings</button></header>
+<main><section style="text-align:center"><div id="clock" style="font-size:2.2rem;font-weight:700"></div><div id="state" class="pill"></div>
+<div id="big" style="font-size:clamp(1.8rem,7vw,3.5rem);font-weight:800;margin:1rem 0;min-height:4.5rem" aria-live="assertive">Ready</div><div id="who" style="font-size:1.4rem;min-height:2rem"></div>
+<label for="scan" class="muted">Scan input (keep this page focused)</label><input id="scan" autocomplete="off" style="max-width:360px">
+<p>Today: <span class="PRESENT">Present <b id="tp">0</b></span> · <span class="LATE">Late <b id="tl">0</b></span> · <span class="ABSENT">Absent <b id="ta">0</b></span></p></section></main>
+<dialog id="set"><form method="dialog"><h2>Scanner settings</h2>
+<label><input type="checkbox" id="wake" style="width:auto;min-height:0"> Keep screen awake</label><p class="muted" id="wakeNote">Browser and OS policies may still dim or sleep the screen.</p>
+<label for="so">Scanner opens (Malaysia time)</label><input type="time" id="so"><label for="sc">Scanner closes</label><input type="time" id="sc">
+<p class="muted">Input device: the USB scanner acts as a keyboard, so browsers cannot tell physical scanners apart. No device selector is offered.</p>
+<div class="row"><button class="sec" value="x">Close</button><button type="button" id="saveSet">Save hours</button></div></form></dialog>
+<script type="module">
+import {initializeApp,getApps,getApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {getFirestore,doc,getDoc,setDoc,getDocs,collection,query,where,deleteDoc,runTransaction,writeBatch,onSnapshot} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAg4k3N6xpljT2PZSg-V6IL1zB33nwO9fs",authDomain:"semsiraattendance.firebaseapp.com",projectId:"semsiraattendance",storageBucket:"semsiraattendance.firebasestorage.app",messagingSenderId:"962714279226",appId:"1:962714279226:web:f10d60e7b3c1e62c194403",measurementId:"G-C95Z34S4LX"};
+const app=getApps().length?getApp():initializeApp(firebaseConfig);const db=getFirestore(app);
+const $=s=>document.querySelector(s);
+// ===== Shared business rules =====
+const KOH={A:["SUMAYYAH","SARAH","KHADIJAH","FATIMAH","ZAINAB","RUQAYYAH","UMMU KALTHOM","AISHAH"],B:["AL FARABI","AL GHAZALI","AL KINDI","AL MAWARDI","AL RAZI","IBNU KHALDUN","IBNU RUSH","IBNU SINA"]};
+const kohOf=c=>KOH.A.includes(c)?"A":KOH.B.includes(c)?"B":null;
+const DEF={semA:1,semB:3,regOpen:true,start:"07:00",late:"07:30",absent:"08:00",scanOpen:"06:30",scanClose:"16:00"};
+const fmtMY=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kuala_Lumpur",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
+function myParts(d=new Date()){const p=Object.fromEntries(fmtMY.formatToParts(d).map(x=>[x.type,x.value]));return{date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour}:${p.minute}`,sec:p.second}}
+const myNow=()=>myParts();
+const myStamp=iso=>{if(!iso)return"";const p=myParts(new Date(iso));return`${p.date} ${p.time}:${p.sec}`};
+function normIC(v){const s=String(v??"").trim();if(!/^\d+$/.test(s))return null;if(s.length===11)return"0"+s;return s.length===12?s:null}
+async function getSettings(){const d=await getDoc(doc(db,"settings","main"));return{...DEF,...(d.exists()?d.data():{})}}
+async function isSchoolDay(date){const w=new Date(date+"T00:00:00Z").getUTCDay();if(w===0||w===6)return false;return !(await getDoc(doc(db,"holidays",date))).exists()}
+function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",4500)}
+function confirmBox(html,okText="Confirm"){return new Promise(r=>{const d=$("#dlg");$("#dlgBody").innerHTML=html;$("#dlgOk").textContent=okText;d.returnValue="";d.onclose=()=>r(d.returnValue==="ok");d.showModal()})}
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dlgHTML=`<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="row" style="margin-top:1rem"><button class="sec" value="cancel">Cancel</button><button id="dlgOk" value="ok"></button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>`;
+document.body.insertAdjacentHTML("beforeend",dlgHTML);
+// ===== Scanner =====
+let S={...DEF},unsub=null,curDate="",wl=null,absDone="";
+const scanEl=$("#scan");
+const COL={PRESENT:"var(--p)",LATE:"var(--l)",ABSENT:"var(--a)",bad:"var(--a)",pause:"#52665f"};
+function show(k,msg,who=""){const b=$("#big");b.textContent=msg;b.style.color=COL[k]||"var(--ink)";$("#who").textContent=who;clearTimeout(show.t);show.t=setTimeout(()=>{b.textContent="Ready";b.style.color="var(--ink)";$("#who").textContent=""},6000)}
+const isOpen=(t)=>t>=S.scanOpen&&t<S.scanClose;
+async function refresh(){const n=myNow();$("#clock").textContent=`${n.date} ${n.time}:${n.sec}`;
+ if(n.date!==curDate){curDate=n.date;watch(n.date)}
+ let sd=false;try{S=await getSettings();sd=await isSchoolDay(n.date)}catch(e){$("#state").textContent="System error: "+e.message;return}
+ const on=sd&&isOpen(n.time);$("#state").textContent=!sd?"No school today":on?"Scanner active":"Scanner closed - resting";scanEl.disabled=!on;
+ if(on&&document.activeElement!==scanEl&&!$("#set").open)scanEl.focus();
+ if(sd&&n.time>=S.absent&&absDone!==n.date)await runAbsence(n.date)}
+function watch(d){if(unsub)unsub();unsub=onSnapshot(query(collection(db,"attendance"),where("date","==",d)),s=>{let c={PRESENT:0,LATE:0,ABSENT:0};s.forEach(x=>c[x.data().status]++);$("#tp").textContent=c.PRESENT;$("#tl").textContent=c.LATE;$("#ta").textContent=c.ABSENT},e=>toast("Totals unavailable: "+e.message,"err"))}
+async function runAbsence(d){ // idempotent, overdue-safe, today only
+ const pr=doc(db,"processing",d);try{if((await getDoc(pr)).exists()){absDone=d;return}
+ const st=await getDocs(collection(db,"students"));
+ for(const x of st.docs){const s=x.data();if(!kohOf(s.Class)||(s.regDate||d)>d)continue;const r=doc(db,"attendance",s.IC+"_"+d);
+  await runTransaction(db,async t=>{if((await t.get(r)).exists())return;t.set(r,{studentId:s.IC,ic:s.IC,name:s.StudentName,class:s.Class,kohort:s.Kohort,date:d,status:"ABSENT",firstScanAt:null,arrivalAt:null,createdAt:new Date().toISOString(),source:"auto-absence"})})}
+ await setDoc(pr,{date:d,doneAt:new Date().toISOString()});absDone=d;toast("Absence processing completed for "+d)}
+ catch(e){toast("Absence processing failed: "+e.message,"err")}}
+async function processScan(raw){const ic=normIC(raw);if(!ic)return show("bad","Invalid IC");
+ try{const n=myNow();await refresh();if(scanEl.disabled)return show("pause","Scanner closed");
+  const sd=await getDoc(doc(db,"students",ic));if(!sd.exists())return show("bad","Student not found");
+  const s=sd.data();if(!kohOf(s.Class))return show("bad","Class not approved");
+  if(n.time<S.start)return show("pause","Attendance opens at "+S.start);
+  const r=doc(db,"attendance",ic+"_"+n.date),iso=new Date().toISOString();
+  const res=await runTransaction(db,async t=>{const a=await t.get(r);
+   if(a.exists()){const d=a.data();if(d.status==="ABSENT"&&!d.arrivalAt){t.update(r,{arrivalAt:iso});return{k:"ABSENT",m:"ABSENT (arrived after cut-off)"}}return{k:"dup",m:"Already scanned ("+d.status+")"}}
+   const st=n.time<S.late?"PRESENT":n.time<S.absent?"LATE":"ABSENT";
+   t.set(r,{studentId:ic,ic,name:s.StudentName,class:s.Class,kohort:s.Kohort,date:n.date,status:st,firstScanAt:iso,arrivalAt:iso,createdAt:iso,source:"scan"});return{k:st,m:st==="ABSENT"?"ABSENT (arrived after cut-off)":st}});
+  show(res.k==="dup"?"pause":res.k,res.m,s.StudentName)}
+ catch(e){show("bad","System error",e.message)}}
+scanEl.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=scanEl.value;scanEl.value="";if(v.trim())processScan(v);scanEl.focus()}});
+document.addEventListener("click",e=>{if(!$("#set").open&&!e.target.closest("button"))scanEl.focus()});
+// settings
+$("#setBtn").onclick=()=>{$("#so").value=S.scanOpen;$("#sc").value=S.scanClose;$("#wake").checked=localStorage.getItem("wake")==="1";$("#set").showModal()};
+$("#set").addEventListener("close",()=>scanEl.focus());
+$("#saveSet").onclick=async()=>{const o=$("#so").value,c=$("#sc").value;if(!o||!c||o>=c)return toast("Opening time must be before closing time.","err");
+ try{await setDoc(doc(db,"settings","main"),{scanOpen:o,scanClose:c},{merge:true});toast("Scanner hours saved");refresh()}catch(e){toast("Save failed: "+e.message,"err")}};
+async function wakeSet(on){try{if(on){if(!("wakeLock" in navigator))return toast("Wake Lock is not supported in this browser.","err");wl=await navigator.wakeLock.request("screen")}else if(wl){await wl.release();wl=null}}catch(e){toast("Screen wake lock denied: "+e.message,"err")}}
+$("#wake").onchange=e=>{localStorage.setItem("wake",e.target.checked?"1":"0");wakeSet(e.target.checked)};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){refresh();if(localStorage.getItem("wake")==="1"&&!wl)wakeSet(true)}});
+if(localStorage.getItem("wake")==="1")wakeSet(true);
+setInterval(()=>{const n=myNow();$("#clock").textContent=`${n.date} ${n.time}:${n.sec}`},1000);
+setInterval(refresh,15000);refresh();
+</script></body></html>

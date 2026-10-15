@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEMSIRA Admin</title><link rel="icon" href="semsira.png"><style>
+:root{--g:#0f5c4d;--ink:#14231f;--bg:#f4f7f6;--line:#d5dfdb;--p:#1b7f4b;--l:#a85f00;--a:#b3261e}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+header{background:var(--g);color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center}
+header img{height:40px}header h1{font-size:1.1rem;margin:0;flex:1}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
+header a{color:#fff;text-decoration:none;padding:.4rem .7rem;border-radius:6px}header a:hover,a:focus-visible{background:#ffffff30}
+main{max-width:1100px;margin:auto;padding:1rem}section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
+h2{margin:.2rem 0 .8rem;font-size:1.2rem}label{display:block;font-weight:600;margin:.6rem 0 .2rem}
+input,select,button{font:inherit;min-height:44px;padding:.4rem .6rem;border:1px solid #9bb0a9;border-radius:6px;max-width:100%}input,select{width:100%}
+button{background:var(--g);color:#fff;border:0;cursor:pointer;width:auto}button.sec{background:#e3ece9;color:var(--ink)}button.del{background:var(--a)}
+:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:end}.row>*{flex:1 1 150px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:.4rem .6rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.PRESENT{color:var(--p);font-weight:700}.LATE{color:var(--l);font-weight:700}.ABSENT{color:var(--a);font-weight:700}
+#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:8px;color:#fff;display:none;z-index:9}
+dialog{max-width:92vw;width:480px;border:0;border-radius:10px;padding:1.2rem}dialog::backdrop{background:#0008}
+.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;background:#e3ece9}
+</style></head><body>
+<header><img src="semsira.png" alt="SEMSIRA"><h1>SEMSIRA Digital Attendance</h1><span id="today"></span><nav><a href="#dash">Dashboard</a><a href="#stu">Students</a><a href="#rep">Reports</a><a href="#set">Settings</a></nav></header>
+<main>
+<section id="dash"><h2>Student attendance history</h2><div class="row"><div><label for="gs">Student</label><select id="gs"></select></div><div><label for="gm">Month</label><input type="month" id="gm"></div></div>
+<div style="height:260px"><canvas id="chart"></canvas></div><p id="gmsg" class="muted"></p>
+<h2>Class attendance</h2><div class="row"><div><label for="cd">Date</label><input type="date" id="cd"></div></div><p id="cnote" class="muted"></p><div id="ctab" class="tw"></div></section>
+<section id="stu"><h2>Student information</h2><label for="q">Search by name or IC</label><input id="q"><div id="tabs" class="row" style="margin:.6rem 0"></div><div class="tw" id="slist"></div></section>
+<section id="rep"><h2>Monthly report</h2><div class="row"><div><label for="rm">Month</label><input type="month" id="rm"></div><button id="rshow">Show report</button><button id="csv" class="sec">Export CSV</button><button id="prt" class="sec">Print</button></div><div id="rout" class="tw"></div>
+<p class="muted">Attendance rate = (PRESENT + LATE) / (PRESENT + LATE + ABSENT) × 100, counting only recorded school days. Weekends and holidays have no records.</p></section>
+<section id="set"><h2>Settings</h2>
+<h3>Semesters</h3><div class="row"><div><label for="sa">KOHORT A</label><select id="sa"></select></div><div><label for="sb">KOHORT B</label><select id="sb"></select></div><button id="ssem">Save semesters</button></div>
+<h3>Registration</h3><div class="row"><label style="flex:2"><input type="checkbox" id="reg" style="width:auto;min-height:0"> Registration is open</label><button id="sreg">Save</button></div>
+<h3>Attendance times</h3><div class="row"><div><label for="t1">Start</label><input type="time" id="t1"></div><div><label for="t2">Late starts</label><input type="time" id="t2"></div><div><label for="t3">Absent at</label><input type="time" id="t3"></div><button id="stime">Save times</button></div>
+<h3>School holidays</h3><div class="row"><div><label for="hd">Date</label><input type="date" id="hd"></div><div style="flex:2"><label for="hn">Name</label><input id="hn"></div><button id="hadd">Save holiday</button></div><div class="tw" id="hlist"></div>
+<h3>Delete a student</h3><div class="row"><div style="flex:3"><label for="ds">Name or IC</label><input id="ds"></div><button id="dsb" class="sec">Search</button></div><div class="tw" id="dres"></div>
+<h3>Delete a Kohort</h3><div class="row"><div><label for="dk">Kohort</label><select id="dk"><option>A</option><option>B</option></select></div><button id="dkb" class="del">Delete Kohort…</button></div>
+<p class="muted">Deletions are permanent. Warning: this version has no login, so use it only on a local test database.</p></section></main>
+<div id="printArea" hidden></div>
+<style>@media print{header,main,#toast,dialog{display:none!important}#printArea{display:block!important;font-size:11pt}@page{size:A4;margin:12mm}}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="module">
+import {initializeApp,getApps,getApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {getFirestore,doc,getDoc,setDoc,getDocs,collection,query,where,deleteDoc,runTransaction,writeBatch,onSnapshot} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAg4k3N6xpljT2PZSg-V6IL1zB33nwO9fs",authDomain:"semsiraattendance.firebaseapp.com",projectId:"semsiraattendance",storageBucket:"semsiraattendance.firebasestorage.app",messagingSenderId:"962714279226",appId:"1:962714279226:web:f10d60e7b3c1e62c194403",measurementId:"G-C95Z34S4LX"};
+const app=getApps().length?getApp():initializeApp(firebaseConfig);const db=getFirestore(app);
+const $=s=>document.querySelector(s);
+// ===== Shared business rules =====
+const KOH={A:["SUMAYYAH","SARAH","KHADIJAH","FATIMAH","ZAINAB","RUQAYYAH","UMMU KALTHOM","AISHAH"],B:["AL FARABI","AL GHAZALI","AL KINDI","AL MAWARDI","AL RAZI","IBNU KHALDUN","IBNU RUSH","IBNU SINA"]};
+const kohOf=c=>KOH.A.includes(c)?"A":KOH.B.includes(c)?"B":null;
+const DEF={semA:1,semB:3,regOpen:true,start:"07:00",late:"07:30",absent:"08:00",scanOpen:"06:30",scanClose:"16:00"};
+const fmtMY=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kuala_Lumpur",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
+function myParts(d=new Date()){const p=Object.fromEntries(fmtMY.formatToParts(d).map(x=>[x.type,x.value]));return{date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour}:${p.minute}`,sec:p.second}}
+const myNow=()=>myParts();
+const myStamp=iso=>{if(!iso)return"";const p=myParts(new Date(iso));return`${p.date} ${p.time}:${p.sec}`};
+function normIC(v){const s=String(v??"").trim();if(!/^\d+$/.test(s))return null;if(s.length===11)return"0"+s;return s.length===12?s:null}
+async function getSettings(){const d=await getDoc(doc(db,"settings","main"));return{...DEF,...(d.exists()?d.data():{})}}
+async function isSchoolDay(date){const w=new Date(date+"T00:00:00Z").getUTCDay();if(w===0||w===6)return false;return !(await getDoc(doc(db,"holidays",date))).exists()}
+function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",4500)}
+function confirmBox(html,okText="Confirm"){return new Promise(r=>{const d=$("#dlg");$("#dlgBody").innerHTML=html;$("#dlgOk").textContent=okText;d.returnValue="";d.onclose=()=>r(d.returnValue==="ok");d.showModal()})}
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dlgHTML=`<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="row" style="margin-top:1rem"><button class="sec" value="cancel">Cancel</button><button id="dlgOk" value="ok"></button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>`;
+document.body.insertAdjacentHTML("beforeend",dlgHTML);
+// ===== Admin =====
+let S={...DEF},ST=[],chart=null,unsubA=null,curTab="A:"+KOH.A[0];
+const clsTable=(rows)=>`<table><tr><th>Class</th><th>Enrolled</th><th>Present</th><th>Late</th><th>Absent</th><th>Rate</th></tr>${rows.map(r=>`<tr><td>${esc(r.c)}</td><td>${r.n}</td><td class="PRESENT">${r.P}</td><td class="LATE">${r.L}</td><td class="ABSENT">${r.A}</td><td>${r.n?((r.P+r.L)/r.n*100).toFixed(1)+"%":"-"}</td></tr>`).join("")}</table>`;
+const byName=(a,b)=>a.StudentName.localeCompare(b.StudentName);
+const sem=["1","2","3"].map(x=>`<option value="${x}">Semester ${x}</option>`).join("");
+$("#sa").innerHTML=$("#sb").innerHTML=sem;
+async function loadStudents(){ST=(await getDocs(collection(db,"students"))).docs.map(d=>d.data());$("#gs").innerHTML='<option value="">Select student</option>'+[...ST].sort(byName).map(s=>`<option value="${s.IC}">${esc(s.StudentName)} (${esc(s.Class)})</option>`).join("");renderStudents()}
+function renderSettings(){$("#sa").value=S.semA;$("#sb").value=S.semB;$("#reg").checked=S.regOpen;$("#t1").value=S.start;$("#t2").value=S.late;$("#t3").value=S.absent}
+function watchClass(){if(unsubA)unsubA();const d=$("#cd").value;if(!d)return;
+ isSchoolDay(d).then(ok=>$("#cnote").textContent=ok?"":"Not a school day (weekend or holiday): no attendance expected.");
+ unsubA=onSnapshot(query(collection(db,"attendance"),where("date","==",d)),snap=>{const rec=snap.docs.map(x=>x.data());let h="";
+  for(const k of["A","B"]){h+=`<h3>SEM ${k==="A"?S.semA:S.semB} KEHADIRAN (KOHORT ${k})</h3>`+clsTable(KOH[k].map(c=>{const n=ST.filter(s=>s.Class===c&&(s.regDate||d)<=d).length,r=rec.filter(x=>x.class===c);return{c,n,P:r.filter(x=>x.status==="PRESENT").length,L:r.filter(x=>x.status==="LATE").length,A:r.filter(x=>x.status==="ABSENT").length}}))}
+  $("#ctab").innerHTML=h},e=>{$("#ctab").textContent="Could not load: "+e.message})}
+async function drawChart(){const id=$("#gs").value,m=$("#gm").value;$("#gmsg").textContent="";if(!id){$("#gmsg").textContent="Select a student to see their history.";return}
+ $("#gmsg").textContent="Loading…";try{const r=(await getDocs(query(collection(db,"attendance"),where("studentId","==",id)))).docs.map(x=>x.data()).filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+  if(chart)chart.destroy();if(!r.length){$("#gmsg").textContent="No attendance records for this month.";return}$("#gmsg").textContent="";
+  const v={PRESENT:2,LATE:1,ABSENT:0};chart=new Chart($("#chart"),{type:"line",data:{labels:r.map(x=>x.date),datasets:[{label:"Status",data:r.map(x=>v[x.status]),stepped:true,borderColor:"#0f5c4d",pointBackgroundColor:r.map(x=>({PRESENT:"#1b7f4b",LATE:"#a85f00",ABSENT:"#b3261e"})[x.status])}]},options:{maintainAspectRatio:false,scales:{y:{min:0,max:2,ticks:{stepSize:1,callback:x=>["ABSENT","LATE","PRESENT"][x]}}},plugins:{legend:{display:false}}}})}
+ catch(e){$("#gmsg").textContent="Error: "+e.message}}
+function renderStudents(){const q=$("#q").value.trim().toLowerCase();let list;
+ $("#tabs").innerHTML=["A","B"].flatMap(k=>KOH[k].map(c=>`<button class="${curTab==="K:"+c?"":"sec"}" data-c="${esc(c)}">${esc(c)}</button>`)).join("");
+ list=q?ST.filter(s=>s.StudentName.toLowerCase().includes(q)||s.IC.includes(q)):ST.filter(s=>"K:"+s.Class===curTab);
+ list=[...list].sort(byName);$("#slist").innerHTML=list.length?`<table><tr><th>Bil</th><th>StudentName</th><th>IC</th><th>ContactNumber</th><th>EmailAddress</th><th>Vehicle</th></tr>${list.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.StudentName)}</td><td>${s.IC}</td><td>${esc(s.ContactNumber)}</td><td>${esc(s.EmailAddress)}</td><td>${esc(s.VehiclePlateNumber)}</td></tr>`).join("")}</table>`:"<p class='muted'>No students to show.</p>"}
+$("#tabs").onclick=e=>{const c=e.target.dataset.c;if(c){curTab="K:"+c;$("#q").value="";renderStudents()}};$("#q").oninput=renderStudents;
+async function save(p,msg){try{await setDoc(doc(db,"settings","main"),p,{merge:true});S={...S,...p};toast(msg);watchClass()}catch(e){toast("Save failed: "+e.message,"err")}}
+$("#ssem").onclick=()=>save({semA:+$("#sa").value,semB:+$("#sb").value},"Semesters saved");
+$("#sreg").onclick=()=>save({regOpen:$("#reg").checked},"Registration setting saved");
+$("#stime").onclick=()=>{const a=$("#t1").value,b=$("#t2").value,c=$("#t3").value;if(!(a&&b&&c&&a<b&&b<c))return toast("Times must be in order: start < late < absent.","err");save({start:a,late:b,absent:c},"Times saved")};
+async function loadHol(){const h=(await getDocs(collection(db,"holidays"))).docs.map(x=>x.data()).sort((a,b)=>a.date.localeCompare(b.date));
+ $("#hlist").innerHTML=h.length?`<table>${h.map(x=>`<tr><td>${x.date}</td><td>${esc(x.name)}</td><td><button class="sec" data-e="${x.date}" data-n="${esc(x.name)}">Edit</button> <button class="del" data-d="${x.date}">Delete</button></td></tr>`).join("")}</table>`:"<p class='muted'>No holidays yet.</p>"}
+$("#hadd").onclick=async()=>{const d=$("#hd").value,n=$("#hn").value.trim();if(!d||!n)return toast("Enter a date and a name.","err");
+ try{await setDoc(doc(db,"holidays",d),{date:d,name:n,updatedAt:new Date().toISOString()});toast("Holiday saved");loadHol()}catch(e){toast("Save failed: "+e.message,"err")}};
+$("#hlist").onclick=async e=>{const b=e.target;if(b.dataset.e){$("#hd").value=b.dataset.e;$("#hn").value=b.dataset.n}
+ if(b.dataset.d&&await confirmBox("Delete holiday "+b.dataset.d+"?","Delete")){try{await deleteDoc(doc(db,"holidays",b.dataset.d));loadHol()}catch(x){toast(x.message,"err")}}};
+async function delDocs(refs){for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit()}}
+$("#dsb").onclick=()=>{const q=$("#ds").value.trim().toLowerCase();const r=q?ST.filter(s=>s.StudentName.toLowerCase().includes(q)||s.IC.includes(q)):[];
+ $("#dres").innerHTML=r.length?`<table>${r.map(s=>`<tr><td>${esc(s.StudentName)}</td><td>${s.IC}</td><td>${esc(s.Class)}</td><td><button class="del" data-ic="${s.IC}">Delete</button></td></tr>`).join("")}</table>`:"<p class='muted'>No matching students.</p>"};
+$("#dres").onclick=async e=>{const ic=e.target.dataset.ic;if(!ic)return;const s=ST.find(x=>x.IC===ic);
+ if(!await confirmBox(`<h2>Delete student?</h2><p><b>${esc(s.StudentName)}</b><br>IC ${s.IC}<br>${esc(s.Class)}<br>${esc(s.ContactNumber)}</p><p>This also deletes all their attendance records.</p>`,"Continue"))return;
+ if(!await confirmBox(`<h2>Final confirmation</h2><p>Permanently delete <b>${esc(s.StudentName)}</b> (${s.IC})?</p>`,"Delete permanently"))return;
+ try{const a=await getDocs(query(collection(db,"attendance"),where("studentId","==",ic)));await delDocs(a.docs.map(x=>x.ref));await deleteDoc(doc(db,"students",ic));toast("Student and attendance deleted");await loadStudents();$("#dres").innerHTML=""}
+ catch(x){toast("Deletion incomplete: "+x.message+". Search and delete again to finish.","err")}};
+$("#dkb").onclick=async()=>{const k=$("#dk").value;try{const st=await getDocs(query(collection(db,"students"),where("Kohort","==",k)));const at=await getDocs(query(collection(db,"attendance"),where("kohort","==",k)));
+ if(!await confirmBox(`<h2>Delete KOHORT ${k}?</h2><p>Classes: ${KOH[k].join(", ")}<br>Students: <b>${st.size}</b><br>Attendance records: <b>${at.size}</b></p>`,"Continue"))return;
+ if(!await confirmBox(`<h2>Final confirmation</h2><p>Permanently delete all of KOHORT ${k}? This cannot be undone.</p>`,"Delete permanently"))return;
+ await delDocs(at.docs.map(x=>x.ref));await delDocs(st.docs.map(x=>x.ref));toast("KOHORT "+k+" deleted");await loadStudents()}
+ catch(x){toast("Deletion incomplete: "+x.message+". Run it again to finish.","err")}};
+// reports
+async function monthRecs(){const m=$("#rm").value;if(!m){toast("Choose a month.","err");return null}
+ const r=await getDocs(query(collection(db,"attendance"),where("date",">=",m+"-01"),where("date","<=",m+"-31")));return r.docs.map(x=>x.data())}
+async function report(){try{const rec=await monthRecs();if(!rec)return null;const h=["A","B"].map(k=>`<h3>KOHORT ${k}</h3>`+clsTable(KOH[k].map(c=>{const r=rec.filter(x=>x.class===c),P=r.filter(x=>x.status==="PRESENT").length,L=r.filter(x=>x.status==="LATE").length,A=r.filter(x=>x.status==="ABSENT").length;return{c,n:P+L+A,P,L,A}}))).join("");
+ $("#rout").innerHTML=h;return{rec,h}}catch(e){toast("Report failed: "+e.message,"err");return null}}
+$("#rshow").onclick=report;
+$("#prt").onclick=async()=>{const r=await report();if(!r)return;$("#printArea").innerHTML=`<img src="semsira.png" height="50" alt="SEMSIRA"><h1>SEMSIRA Monthly Attendance - ${$("#rm").value}</h1><p>Columns show recorded student-days.</p>${r.h}`;window.print()};
+const cell=v=>{let s=String(v??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+$("#csv").onclick=async()=>{const rec=await monthRecs();if(!rec)return;if(!rec.length)return toast("No records for that month.","err");rec.sort((a,b)=>a.date.localeCompare(b.date)||a.name.localeCompare(b.name));
+ const rows=[["Date","Name","IC","Class","Kohort","Status","ArrivalTime(MYT)"],...rec.map(x=>[x.date,x.name,x.ic,x.class,x.kohort,x.status,myStamp(x.arrivalAt)])];
+ const blob=new Blob(["\ufeff"+rows.map(r=>r.map(cell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`attendance-${$("#rm").value}.csv`;a.click()};
+// init
+const n=myNow();$("#today").textContent=n.date+" (Malaysia)";$("#cd").value=n.date;$("#gm").value=$("#rm").value=n.date.slice(0,7);
+$("#gs").onchange=$("#gm").onchange=drawChart;$("#cd").onchange=watchClass;
+(async()=>{try{S=await getSettings();renderSettings();await loadStudents();await loadHol();watchClass();drawChart()}catch(e){toast("Cannot load data: "+e.message,"err")}})();
+</script></body></html>
