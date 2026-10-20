@@ -1,30 +1,42 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SEMSIRA Registration</title><link rel="icon" href="semsira.png"><style>
-:root{--g:#0f5c4d;--ink:#14231f;--bg:#f4f7f6;--line:#d5dfdb;--p:#1b7f4b;--l:#a85f00;--a:#b3261e}
-*{box-sizing:border-box}body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
-header{background:var(--g);color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center}
-header img{height:40px}header h1{font-size:1.1rem;margin:0;flex:1}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
-header a{color:#fff;text-decoration:none;padding:.4rem .7rem;border-radius:6px}header a:hover,a:focus-visible{background:#ffffff30}
-main{max-width:1100px;margin:auto;padding:1rem}section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
-h2{margin:.2rem 0 .8rem;font-size:1.2rem}label{display:block;font-weight:600;margin:.6rem 0 .2rem}
-input,select,button{font:inherit;min-height:44px;padding:.4rem .6rem;border:1px solid #9bb0a9;border-radius:6px;max-width:100%}input,select{width:100%}
-button{background:var(--g);color:#fff;border:0;cursor:pointer;width:auto}button.sec{background:#e3ece9;color:var(--ink)}button.del{background:var(--a)}
-:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:end}.row>*{flex:1 1 150px}
-.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:.4rem .6rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+:root{--g:#0b6b5b;--g2:#13a58b;--ink:#10231f;--bg:#eaf3f0;--line:#dbe6e2;--p:#16a05d;--l:#d98200;--a:#d6352b;--r:16px;--sh:0 6px 24px #0b6b5b1a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font:16px/1.55 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:radial-gradient(1200px 500px at 10% -10%,#c9eadf 0,transparent 60%),var(--bg);overflow-x:hidden;min-height:100vh}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(120deg,var(--g),var(--g2));color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;box-shadow:0 4px 20px #0b6b5b40}
+header img{height:42px;background:#fff;border-radius:12px;padding:3px}header h1{font-size:1.1rem;margin:0;flex:1;letter-spacing:.2px}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
+header a{color:#fff;text-decoration:none;padding:.4rem .9rem;border-radius:99px;transition:.2s}header a:hover{background:#ffffff38;transform:translateY(-1px)}
+main{max-width:1100px;margin:auto;padding:1rem}
+section{background:#fffffff2;border:1px solid var(--line);border-radius:var(--r);padding:1.2rem;margin-bottom:1.2rem;box-shadow:var(--sh);transition:box-shadow .25s,transform .25s;scroll-margin-top:80px}
+section:hover{box-shadow:0 10px 32px #0b6b5b2b}
+h2{margin:.2rem 0 .8rem;font-size:1.25rem}h3{margin:1.4rem 0 .4rem;font-size:1.02rem;color:var(--g)}
+label{display:block;font-weight:600;margin:.6rem 0 .2rem}
+input,select,button{font:inherit;min-height:46px;padding:.45rem .8rem;border:1.5px solid #b7cbc4;border-radius:12px;max-width:100%;transition:.18s}input,select{width:100%;background:#fff}
+input:hover,select:hover{border-color:var(--g2)}input:focus,select:focus{outline:none;border-color:var(--g2);box-shadow:0 0 0 4px #13a58b30}
+button{background:linear-gradient(120deg,var(--g),var(--g2));color:#fff;border:0;cursor:pointer;width:auto;font-weight:600;box-shadow:0 3px 10px #0b6b5b40}
+button:hover{transform:translateY(-2px);box-shadow:0 6px 16px #0b6b5b55}button:active{transform:scale(.97)}button:disabled{opacity:.5;transform:none;cursor:not-allowed}
+button.sec{background:#e1eeea;color:var(--ink);box-shadow:none}button.sec:hover{background:#cfe5de}button.del{background:linear-gradient(120deg,#b3261e,#e5493d)}
+:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:end}.row>*{flex:1 1 150px}
+.tw{overflow-x:auto;border-radius:12px}table{border-collapse:collapse;width:100%}th{background:#e6f1ee;font-size:.9rem}th,td{padding:.55rem .8rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}tbody tr:hover,table tr:hover td{background:#f1f9f6}
 .PRESENT{color:var(--p);font-weight:700}.LATE{color:var(--l);font-weight:700}.ABSENT{color:var(--a);font-weight:700}
-#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:8px;color:#fff;display:none;z-index:9}
-dialog{max-width:92vw;width:480px;border:0;border-radius:10px;padding:1.2rem}dialog::backdrop{background:#0008}
-.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;background:#e3ece9}
+#toast{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,20px);max-width:92vw;padding:.8rem 1.2rem;border-radius:14px;color:#fff;opacity:0;pointer-events:none;z-index:99;box-shadow:0 8px 24px #0004;transition:.3s}#toast.on{opacity:1;transform:translate(-50%,0)}
+dialog{max-width:92vw;width:480px;border:0;border-radius:20px;padding:1.4rem;box-shadow:0 20px 60px #0006;animation:pop .25s}dialog::backdrop{background:#0a1f1a99;backdrop-filter:blur(3px)}
+@keyframes pop{from{opacity:0;transform:scale(.94)}}@keyframes pulse{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.2rem .9rem;border-radius:99px;background:#dff0ea;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin:.6rem 0}
+.stat{border-radius:14px;padding:.8rem 1rem;background:#f1f9f6;border:1px solid var(--line);transition:.2s}.stat:hover{transform:translateY(-3px);box-shadow:var(--sh)}.stat b{display:block;font-size:1.9rem;line-height:1.1}.stat span{font-size:.85rem;color:#52665f}
+.bar{height:8px;min-width:90px;border-radius:9px;background:#dfeae6;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g2),var(--p));border-radius:9px;transition:width .6s}
+.chips button{border-radius:99px;min-height:38px;padding:.2rem .9rem}
 </style></head><body>
 <header><img src="semsira.png" alt="SEMSIRA"><h1>SEMSIRA Student Registration</h1></header>
-<main><section id="closed" hidden><h2>Registration is closed</h2><p>Registration is not open right now. Please ask your teacher.</p></section>
-<section id="formSec"><h2>Register your details</h2><form id="f" novalidate>
-<label for="name">Name</label><input id="name" autocomplete="name" required>
+<main style="max-width:560px"><section id="closed" hidden><h2>Registration is closed</h2><p>Registration is not open right now. Please ask your teacher.</p></section>
+<section id="formSec"><h2>Register your details</h2><p class="muted">Everything you type is saved in CAPITAL LETTERS.</p><form id="f" novalidate>
+<label for="name">Name</label><input id="name" style="text-transform:uppercase" autocomplete="name" required>
 <label for="ic">IC number (12 digits)</label><input id="ic" inputmode="numeric" required>
 <label for="cls">Class</label><select id="cls" required></select>
-<label for="tel">Contact number</label><input id="tel" type="tel" required>
-<label for="mail">Email address</label><input id="mail" type="email" required>
-<label for="car">Vehicle plate number (optional)</label><input id="car">
+<label for="tel">Contact number</label><div style="display:flex;gap:.4rem"><span class="pill" style="display:flex;align-items:center;font-size:1.05rem">+60</span><input id="tel" type="tel" inputmode="numeric" placeholder="1234567890" required></div><p class="muted">Type only the number after +60, without the leading 0.</p>
+<label for="mail">Email address</label><input id="mail" style="text-transform:uppercase" type="email" required>
+<label for="car">Vehicle plate number (optional)</label><input id="car" style="text-transform:uppercase">
 <p id="err" style="color:var(--a)" role="alert"></p><button id="go">Review details</button></form></section>
 <section id="done" hidden><h2>Registered</h2><p>Your registration was saved. You can close this page.</p></section></main>
 <script type="module">
@@ -44,7 +56,7 @@ const myStamp=iso=>{if(!iso)return"";const p=myParts(new Date(iso));return`${p.d
 function normIC(v){const s=String(v??"").trim();if(!/^\d+$/.test(s))return null;if(s.length===11)return"0"+s;return s.length===12?s:null}
 async function getSettings(){const d=await getDoc(doc(db,"settings","main"));return{...DEF,...(d.exists()?d.data():{})}}
 async function isSchoolDay(date){const w=new Date(date+"T00:00:00Z").getUTCDay();if(w===0||w===6)return false;return !(await getDoc(doc(db,"holidays",date))).exists()}
-function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",4500)}
+function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),4500)}
 function confirmBox(html,okText="Confirm"){return new Promise(r=>{const d=$("#dlg");$("#dlgBody").innerHTML=html;$("#dlgOk").textContent=okText;d.returnValue="";d.onclose=()=>r(d.returnValue==="ok");d.showModal()})}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dlgHTML=`<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="row" style="margin-top:1rem"><button class="sec" value="cancel">Cancel</button><button id="dlgOk" value="ok"></button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>`;
@@ -53,17 +65,19 @@ document.body.insertAdjacentHTML("beforeend",dlgHTML);
 $("#cls").innerHTML='<option value="">Select class</option>'+["A","B"].map(k=>`<optgroup label="KOHORT ${k}">${KOH[k].map(c=>`<option>${c}</option>`).join("")}</optgroup>`).join("");
 async function checkOpen(){const s=await getSettings();$("#closed").hidden=s.regOpen;$("#formSec").hidden=!s.regOpen||!$("#done").hidden;return s.regOpen}
 checkOpen().catch(e=>{toast("Cannot reach database: "+e.message,"err")});
-$("#f").addEventListener("submit",async e=>{e.preventDefault();$("#err").textContent="";
- const v={name:$("#name").value.trim().replace(/\s+/g," "),ic:normIC($("#ic").value),cls:$("#cls").value,tel:$("#tel").value.trim(),mail:$("#mail").value.trim(),car:$("#car").value.trim()};
+let busyReg=false,done=false;
+$("#f").addEventListener("submit",e=>{e.preventDefault();if(busyReg)return;busyReg=true;submitReg().finally(()=>{if(!done)busyReg=false})});
+async function submitReg(){$("#err").textContent="";
+ const U=x=>x.trim().replace(/\s+/g," ").toUpperCase();const v={name:U($("#name").value),ic:normIC($("#ic").value),cls:$("#cls").value.toUpperCase(),tel:$("#tel").value.replace(/\s+/g,""),mail:U($("#mail").value),car:U($("#car").value)};
  const er=[];if(!v.name)er.push("Name is required.");if(!v.ic)er.push("IC must be 12 digits (11 digits get a leading zero added). No other characters allowed.");
- if(!kohOf(v.cls))er.push("Choose a class.");if(!v.tel)er.push("Contact number is required.");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.mail))er.push("Enter a valid email address.");
+ if(!kohOf(v.cls))er.push("Choose a class.");if(!/^[1-9]\d{7,10}$/.test(v.tel))er.push("Contact number: type 8-11 digits after +60, without the leading 0, digits only.");else v.tel="+60 "+v.tel;if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.mail))er.push("Enter a valid email address.");
  if(er.length){$("#err").textContent=er.join(" ");return}
  const ok=await confirmBox(`<h2>Check your details</h2><p>Name: <b>${esc(v.name)}</b><br>IC: <b>${v.ic}</b><br>Class: <b>${esc(v.cls)}</b> (Kohort ${kohOf(v.cls)})<br>Contact: <b>${esc(v.tel)}</b><br>Email: <b>${esc(v.mail)}</b><br>Vehicle: <b>${esc(v.car)||"-"}</b></p>`,"Confirm and register");
- if(!ok)return;$("#go").disabled=true;
+ if(!ok)return;$("#go").disabled=true;$("#go").textContent="Saving…";
  try{if(!await checkOpen()){toast("Registration just closed. Nothing was saved.","err");return}
   const ref=doc(db,"students",v.ic);
   await runTransaction(db,async t=>{if((await t.get(ref)).exists())throw new Error("DUP");
    t.set(ref,{studentId:v.ic,StudentName:v.name,IC:v.ic,Class:v.cls,Kohort:kohOf(v.cls),ContactNumber:v.tel,EmailAddress:v.mail,VehiclePlateNumber:v.car,registeredAt:new Date().toISOString(),regDate:myNow().date})});
-  $("#formSec").hidden=true;$("#done").hidden=false;
- }catch(x){$("#go").disabled=false;toast(x.message==="DUP"?"This IC is already registered.":"Could not save: "+x.message,"err")}});
+  done=true;$("#formSec").hidden=true;$("#done").hidden=false;
+ }catch(x){$("#go").disabled=false;$("#go").textContent="Review details";toast(x.message==="DUP"?"This IC is already registered.":"Could not save: "+x.message,"err")}}
 </script></body></html>
