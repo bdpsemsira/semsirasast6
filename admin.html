@@ -1,27 +1,39 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SEMSIRA Admin</title><link rel="icon" href="semsira.png"><style>
-:root{--g:#0f5c4d;--ink:#14231f;--bg:#f4f7f6;--line:#d5dfdb;--p:#1b7f4b;--l:#a85f00;--a:#b3261e}
-*{box-sizing:border-box}body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
-header{background:var(--g);color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center}
-header img{height:40px}header h1{font-size:1.1rem;margin:0;flex:1}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
-header a{color:#fff;text-decoration:none;padding:.4rem .7rem;border-radius:6px}header a:hover,a:focus-visible{background:#ffffff30}
-main{max-width:1100px;margin:auto;padding:1rem}section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
-h2{margin:.2rem 0 .8rem;font-size:1.2rem}label{display:block;font-weight:600;margin:.6rem 0 .2rem}
-input,select,button{font:inherit;min-height:44px;padding:.4rem .6rem;border:1px solid #9bb0a9;border-radius:6px;max-width:100%}input,select{width:100%}
-button{background:var(--g);color:#fff;border:0;cursor:pointer;width:auto}button.sec{background:#e3ece9;color:var(--ink)}button.del{background:var(--a)}
-:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:end}.row>*{flex:1 1 150px}
-.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:.4rem .6rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+:root{--g:#0b6b5b;--g2:#13a58b;--ink:#10231f;--bg:#eaf3f0;--line:#dbe6e2;--p:#16a05d;--l:#d98200;--a:#d6352b;--r:16px;--sh:0 6px 24px #0b6b5b1a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font:16px/1.55 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:radial-gradient(1200px 500px at 10% -10%,#c9eadf 0,transparent 60%),var(--bg);overflow-x:hidden;min-height:100vh}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(120deg,var(--g),var(--g2));color:#fff;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;box-shadow:0 4px 20px #0b6b5b40}
+header img{height:42px;background:#fff;border-radius:12px;padding:3px}header h1{font-size:1.1rem;margin:0;flex:1;letter-spacing:.2px}header nav{display:flex;flex-wrap:wrap;gap:.25rem}
+header a{color:#fff;text-decoration:none;padding:.4rem .9rem;border-radius:99px;transition:.2s}header a:hover{background:#ffffff38;transform:translateY(-1px)}
+main{max-width:1100px;margin:auto;padding:1rem}
+section{background:#fffffff2;border:1px solid var(--line);border-radius:var(--r);padding:1.2rem;margin-bottom:1.2rem;box-shadow:var(--sh);transition:box-shadow .25s,transform .25s;scroll-margin-top:80px}
+section:hover{box-shadow:0 10px 32px #0b6b5b2b}
+h2{margin:.2rem 0 .8rem;font-size:1.25rem}h3{margin:1.4rem 0 .4rem;font-size:1.02rem;color:var(--g)}
+label{display:block;font-weight:600;margin:.6rem 0 .2rem}
+input,select,button{font:inherit;min-height:46px;padding:.45rem .8rem;border:1.5px solid #b7cbc4;border-radius:12px;max-width:100%;transition:.18s}input,select{width:100%;background:#fff}
+input:hover,select:hover{border-color:var(--g2)}input:focus,select:focus{outline:none;border-color:var(--g2);box-shadow:0 0 0 4px #13a58b30}
+button{background:linear-gradient(120deg,var(--g),var(--g2));color:#fff;border:0;cursor:pointer;width:auto;font-weight:600;box-shadow:0 3px 10px #0b6b5b40}
+button:hover{transform:translateY(-2px);box-shadow:0 6px 16px #0b6b5b55}button:active{transform:scale(.97)}button:disabled{opacity:.5;transform:none;cursor:not-allowed}
+button.sec{background:#e1eeea;color:var(--ink);box-shadow:none}button.sec:hover{background:#cfe5de}button.del{background:linear-gradient(120deg,#b3261e,#e5493d)}
+:focus-visible{outline:3px solid #f0b400;outline-offset:2px}.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:end}.row>*{flex:1 1 150px}
+.tw{overflow-x:auto;border-radius:12px}table{border-collapse:collapse;width:100%}th{background:#e6f1ee;font-size:.9rem}th,td{padding:.55rem .8rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}tbody tr:hover,table tr:hover td{background:#f1f9f6}
 .PRESENT{color:var(--p);font-weight:700}.LATE{color:var(--l);font-weight:700}.ABSENT{color:var(--a);font-weight:700}
-#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:8px;color:#fff;display:none;z-index:9}
-dialog{max-width:92vw;width:480px;border:0;border-radius:10px;padding:1.2rem}dialog::backdrop{background:#0008}
-.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;background:#e3ece9}
+#toast{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,20px);max-width:92vw;padding:.8rem 1.2rem;border-radius:14px;color:#fff;opacity:0;pointer-events:none;z-index:99;box-shadow:0 8px 24px #0004;transition:.3s}#toast.on{opacity:1;transform:translate(-50%,0)}
+dialog{max-width:92vw;width:480px;border:0;border-radius:20px;padding:1.4rem;box-shadow:0 20px 60px #0006;animation:pop .25s}dialog::backdrop{background:#0a1f1a99;backdrop-filter:blur(3px)}
+@keyframes pop{from{opacity:0;transform:scale(.94)}}@keyframes pulse{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.muted{color:#52665f;font-size:.9rem}.pill{display:inline-block;padding:.2rem .9rem;border-radius:99px;background:#dff0ea;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin:.6rem 0}
+.stat{border-radius:14px;padding:.8rem 1rem;background:#f1f9f6;border:1px solid var(--line);transition:.2s}.stat:hover{transform:translateY(-3px);box-shadow:var(--sh)}.stat b{display:block;font-size:1.9rem;line-height:1.1}.stat span{font-size:.85rem;color:#52665f}
+.bar{height:8px;min-width:90px;border-radius:9px;background:#dfeae6;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g2),var(--p));border-radius:9px;transition:width .6s}
+.chips button{border-radius:99px;min-height:38px;padding:.2rem .9rem}
 </style></head><body>
 <header><img src="semsira.png" alt="SEMSIRA"><h1>SEMSIRA Digital Attendance</h1><span id="today"></span><nav><a href="#dash">Dashboard</a><a href="#stu">Students</a><a href="#rep">Reports</a><a href="#set">Settings</a></nav></header>
 <main>
-<section id="dash"><h2>Student attendance history</h2><div class="row"><div><label for="gs">Student</label><select id="gs"></select></div><div><label for="gm">Month</label><input type="month" id="gm"></div></div>
-<div style="height:260px"><canvas id="chart"></canvas></div><p id="gmsg" class="muted"></p>
-<h2>Class attendance</h2><div class="row"><div><label for="cd">Date</label><input type="date" id="cd"></div></div><p id="cnote" class="muted"></p><div id="ctab" class="tw"></div></section>
-<section id="stu"><h2>Student information</h2><label for="q">Search by name or IC</label><input id="q"><div id="tabs" class="row" style="margin:.6rem 0"></div><div class="tw" id="slist"></div></section>
+<section id="dash"><h2>Overall attendance</h2><div class="row"><div><label for="cd">Date</label><input type="date" id="cd"></div></div><p id="cnote" class="muted"></p>
+<div class="stats"><div class="stat"><span>Enrolled</span><b id="sE">0</b></div><div class="stat"><span>Present</span><b id="sP" class="PRESENT">0</b></div><div class="stat"><span>Late</span><b id="sL" class="LATE">0</b></div><div class="stat"><span>Absent</span><b id="sA" class="ABSENT">0</b></div><div class="stat"><span>Attendance rate</span><b id="sR">-</b></div></div>
+<div style="height:240px"><canvas id="chart"></canvas></div><h2 style="margin-top:1.2rem">By class</h2><div id="ctab" class="tw"></div></section>
+<section id="stu"><h2>Student information</h2><label for="q">Search by name or IC</label><input id="q"><div id="tabs" class="row chips" style="margin:.6rem 0"></div><div class="tw" id="slist"></div></section>
 <section id="rep"><h2>Monthly report</h2><div class="row"><div><label for="rm">Month</label><input type="month" id="rm"></div><button id="rshow">Show report</button><button id="csv" class="sec">Export CSV</button><button id="prt" class="sec">Print</button></div><div id="rout" class="tw"></div>
 <p class="muted">Attendance rate = (PRESENT + LATE) / (PRESENT + LATE + ABSENT) × 100, counting only recorded school days. Weekends and holidays have no records.</p></section>
 <section id="set"><h2>Settings</h2>
@@ -52,29 +64,26 @@ const myStamp=iso=>{if(!iso)return"";const p=myParts(new Date(iso));return`${p.d
 function normIC(v){const s=String(v??"").trim();if(!/^\d+$/.test(s))return null;if(s.length===11)return"0"+s;return s.length===12?s:null}
 async function getSettings(){const d=await getDoc(doc(db,"settings","main"));return{...DEF,...(d.exists()?d.data():{})}}
 async function isSchoolDay(date){const w=new Date(date+"T00:00:00Z").getUTCDay();if(w===0||w===6)return false;return !(await getDoc(doc(db,"holidays",date))).exists()}
-function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",4500)}
+function toast(m,t="ok"){const e=$("#toast");e.textContent=m;e.style.background=t==="ok"?"#1b7f4b":"#b3261e";e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),4500)}
 function confirmBox(html,okText="Confirm"){return new Promise(r=>{const d=$("#dlg");$("#dlgBody").innerHTML=html;$("#dlgOk").textContent=okText;d.returnValue="";d.onclose=()=>r(d.returnValue==="ok");d.showModal()})}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dlgHTML=`<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="row" style="margin-top:1rem"><button class="sec" value="cancel">Cancel</button><button id="dlgOk" value="ok"></button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>`;
 document.body.insertAdjacentHTML("beforeend",dlgHTML);
 // ===== Admin =====
 let S={...DEF},ST=[],chart=null,unsubA=null,curTab="A:"+KOH.A[0];
-const clsTable=(rows)=>`<table><tr><th>Class</th><th>Enrolled</th><th>Present</th><th>Late</th><th>Absent</th><th>Rate</th></tr>${rows.map(r=>`<tr><td>${esc(r.c)}</td><td>${r.n}</td><td class="PRESENT">${r.P}</td><td class="LATE">${r.L}</td><td class="ABSENT">${r.A}</td><td>${r.n?((r.P+r.L)/r.n*100).toFixed(1)+"%":"-"}</td></tr>`).join("")}</table>`;
+const clsTable=(rows)=>`<table><tr><th>Class</th><th>Enrolled</th><th>Present</th><th>Late</th><th>Absent</th><th>Rate</th></tr>${rows.map(r=>`<tr><td>${esc(r.c)}</td><td>${r.n}</td><td class="PRESENT">${r.P}</td><td class="LATE">${r.L}</td><td class="ABSENT">${r.A}</td><td>${r.n?`<div class="bar" title="${((r.P+r.L)/r.n*100).toFixed(1)}%"><i style="width:${((r.P+r.L)/r.n*100).toFixed(1)}%"></i></div>${((r.P+r.L)/r.n*100).toFixed(1)}%`:"-"}</td></tr>`).join("")}</table>`;
 const byName=(a,b)=>a.StudentName.localeCompare(b.StudentName);
 const sem=["1","2","3"].map(x=>`<option value="${x}">Semester ${x}</option>`).join("");
 $("#sa").innerHTML=$("#sb").innerHTML=sem;
-async function loadStudents(){ST=(await getDocs(collection(db,"students"))).docs.map(d=>d.data());$("#gs").innerHTML='<option value="">Select student</option>'+[...ST].sort(byName).map(s=>`<option value="${s.IC}">${esc(s.StudentName)} (${esc(s.Class)})</option>`).join("");renderStudents()}
+async function loadStudents(){ST=(await getDocs(collection(db,"students"))).docs.map(d=>d.data());renderStudents()}
 function renderSettings(){$("#sa").value=S.semA;$("#sb").value=S.semB;$("#reg").checked=S.regOpen;$("#t1").value=S.start;$("#t2").value=S.late;$("#t3").value=S.absent}
 function watchClass(){if(unsubA)unsubA();const d=$("#cd").value;if(!d)return;
  isSchoolDay(d).then(ok=>$("#cnote").textContent=ok?"":"Not a school day (weekend or holiday): no attendance expected.");
  unsubA=onSnapshot(query(collection(db,"attendance"),where("date","==",d)),snap=>{const rec=snap.docs.map(x=>x.data());let h="";
   for(const k of["A","B"]){h+=`<h3>SEM ${k==="A"?S.semA:S.semB} KEHADIRAN (KOHORT ${k})</h3>`+clsTable(KOH[k].map(c=>{const n=ST.filter(s=>s.Class===c&&(s.regDate||d)<=d).length,r=rec.filter(x=>x.class===c);return{c,n,P:r.filter(x=>x.status==="PRESENT").length,L:r.filter(x=>x.status==="LATE").length,A:r.filter(x=>x.status==="ABSENT").length}}))}
-  $("#ctab").innerHTML=h},e=>{$("#ctab").textContent="Could not load: "+e.message})}
-async function drawChart(){const id=$("#gs").value,m=$("#gm").value;$("#gmsg").textContent="";if(!id){$("#gmsg").textContent="Select a student to see their history.";return}
- $("#gmsg").textContent="Loading…";try{const r=(await getDocs(query(collection(db,"attendance"),where("studentId","==",id)))).docs.map(x=>x.data()).filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
-  if(chart)chart.destroy();if(!r.length){$("#gmsg").textContent="No attendance records for this month.";return}$("#gmsg").textContent="";
-  const v={PRESENT:2,LATE:1,ABSENT:0};chart=new Chart($("#chart"),{type:"line",data:{labels:r.map(x=>x.date),datasets:[{label:"Status",data:r.map(x=>v[x.status]),stepped:true,borderColor:"#0f5c4d",pointBackgroundColor:r.map(x=>({PRESENT:"#1b7f4b",LATE:"#a85f00",ABSENT:"#b3261e"})[x.status])}]},options:{maintainAspectRatio:false,scales:{y:{min:0,max:2,ticks:{stepSize:1,callback:x=>["ABSENT","LATE","PRESENT"][x]}}},plugins:{legend:{display:false}}}})}
- catch(e){$("#gmsg").textContent="Error: "+e.message}}
+  $("#ctab").innerHTML=h;const ids=new Set(ST.filter(s=>(s.regDate||d)<=d).map(s=>s.IC)),P=rec.filter(x=>x.status==="PRESENT").length,L=rec.filter(x=>x.status==="LATE").length,A=rec.filter(x=>x.status==="ABSENT").length,E=ids.size;
+  $("#sE").textContent=E;$("#sP").textContent=P;$("#sL").textContent=L;$("#sA").textContent=A;$("#sR").textContent=E?((P+L)/E*100).toFixed(1)+"%":"-";
+  const dat=[P,L,A,Math.max(0,E-P-L-A)];if(!chart)chart=new Chart($("#chart"),{type:"doughnut",data:{labels:["Present","Late","Absent","Not recorded yet"],datasets:[{data:dat,backgroundColor:["#16a05d","#d98200","#d6352b","#cfdcd7"],borderWidth:0}]},options:{maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"right"}}}});else{chart.data.datasets[0].data=dat;chart.update()}},e=>{$("#ctab").textContent="Could not load: "+e.message})}
 function renderStudents(){const q=$("#q").value.trim().toLowerCase();let list;
  $("#tabs").innerHTML=["A","B"].flatMap(k=>KOH[k].map(c=>`<button class="${curTab==="K:"+c?"":"sec"}" data-c="${esc(c)}">${esc(c)}</button>`)).join("");
  list=q?ST.filter(s=>s.StudentName.toLowerCase().includes(q)||s.IC.includes(q)):ST.filter(s=>"K:"+s.Class===curTab);
@@ -115,7 +124,7 @@ $("#csv").onclick=async()=>{const rec=await monthRecs();if(!rec)return;if(!rec.l
  const rows=[["Date","Name","IC","Class","Kohort","Status","ArrivalTime(MYT)"],...rec.map(x=>[x.date,x.name,x.ic,x.class,x.kohort,x.status,myStamp(x.arrivalAt)])];
  const blob=new Blob(["\ufeff"+rows.map(r=>r.map(cell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`attendance-${$("#rm").value}.csv`;a.click()};
 // init
-const n=myNow();$("#today").textContent=n.date+" (Malaysia)";$("#cd").value=n.date;$("#gm").value=$("#rm").value=n.date.slice(0,7);
-$("#gs").onchange=$("#gm").onchange=drawChart;$("#cd").onchange=watchClass;
-(async()=>{try{S=await getSettings();renderSettings();await loadStudents();await loadHol();watchClass();drawChart()}catch(e){toast("Cannot load data: "+e.message,"err")}})();
+const n=myNow();$("#today").textContent=n.date+" (Malaysia)";$("#cd").value=n.date;$("#rm").value=n.date.slice(0,7);
+$("#cd").onchange=watchClass;
+(async()=>{try{S=await getSettings();renderSettings();await loadStudents();await loadHol();watchClass() }catch(e){toast("Cannot load data: "+e.message,"err")}})();
 </script></body></html>
