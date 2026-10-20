@@ -30,11 +30,11 @@ dialog{max-width:92vw;width:480px;border:0;border-radius:20px;padding:1.4rem;box
 </style></head><body>
 <header><img src="semsira.png" alt="SEMSIRA"><h1>SEMSIRA Student Registration</h1></header>
 <main style="max-width:560px"><section id="closed" hidden><h2>Registration is closed</h2><p>Registration is not open right now. Please ask your teacher.</p></section>
-<section id="formSec"><h2>Register your details</h2><p class="muted">Everything you type is saved in CAPITAL LETTERS.</p><form id="f" novalidate>
+<section id="formSec"><h2>Register your details</h2><p class="muted"></p><form id="f" novalidate>
 <label for="name">Name</label><input id="name" style="text-transform:uppercase" autocomplete="name" required>
 <label for="ic">IC number (12 digits)</label><input id="ic" inputmode="numeric" required>
 <label for="cls">Class</label><select id="cls" required></select>
-<label for="tel">Contact number</label><div style="display:flex;gap:.4rem"><span class="pill" style="display:flex;align-items:center;font-size:1.05rem">+60</span><input id="tel" type="tel" inputmode="numeric" placeholder="1234567890" required></div><p class="muted">Type only the number after +60, without the leading 0.</p>
+<label for="tel">Contact number</label><div style="display:flex;gap:.4rem"><span class="pill" style="display:flex;align-items:center;font-size:1.05rem">+60</span><input id="tel" type="tel" inputmode="numeric" placeholder="1234567890" required></div><p class="muted"></p>
 <label for="mail">Email address</label><input id="mail" style="text-transform:uppercase" type="email" required>
 <label for="car">Vehicle plate number (optional)</label><input id="car" style="text-transform:uppercase">
 <p id="err" style="color:var(--a)" role="alert"></p><button id="go">Review details</button></form></section>
