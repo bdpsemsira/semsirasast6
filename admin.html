@@ -40,7 +40,7 @@ dialog{max-width:92vw;width:480px;border:0;border-radius:20px;padding:1.4rem;box
 <h3>Semesters</h3><div class="row"><div><label for="sa">KOHORT A</label><select id="sa"></select></div><div><label for="sb">KOHORT B</label><select id="sb"></select></div><button id="ssem">Save semesters</button></div>
 <h3>Registration</h3><div class="row"><label style="flex:2"><input type="checkbox" id="reg" style="width:auto;min-height:0"> Registration is open</label><button id="sreg">Save</button></div>
 <h3>Attendance times</h3><div class="row"><div><label for="t1">Start</label><input type="time" id="t1"></div><div><label for="t2">Late starts</label><input type="time" id="t2"></div><div><label for="t3">Absent at</label><input type="time" id="t3"></div><button id="stime">Save times</button></div>
-<h3>School holidays</h3><div class="row"><div><label for="hd">Date</label><input type="date" id="hd"></div><div style="flex:2"><label for="hn">Name</label><input id="hn"></div><button id="hadd">Save holiday</button></div><div class="tw" id="hlist"></div>
+<h3>School holidays</h3><div class="row"><div><label for="hd">From</label><input type="date" id="hd"></div><div><label for="he">To (inclusive)</label><input type="date" id="he"></div><div style="flex:2"><label for="hn">Name</label><input id="hn"></div><button id="hadd">Save holiday</button><button id="hcancel" class="sec" hidden>Cancel edit</button></div><p class="muted">Pick a single day by choosing the same date in both fields. Weekends are always skipped anyway.</p><div class="tw" id="hlist"></div>
 <h3>Delete a student</h3><div class="row"><div style="flex:3"><label for="ds">Name or IC</label><input id="ds"></div><button id="dsb" class="sec">Search</button></div><div class="tw" id="dres"></div>
 <h3>Delete a Kohort</h3><div class="row"><div><label for="dk">Kohort</label><select id="dk"><option>A</option><option>B</option></select></div><button id="dkb" class="del">Delete Kohort…</button></div>
 <p class="muted">Deletions are permanent. Warning: this version has no login, so use it only on a local test database.</p></section></main>
@@ -93,12 +93,27 @@ async function save(p,msg){try{await setDoc(doc(db,"settings","main"),p,{merge:t
 $("#ssem").onclick=()=>save({semA:+$("#sa").value,semB:+$("#sb").value},"Semesters saved");
 $("#sreg").onclick=()=>save({regOpen:$("#reg").checked},"Registration setting saved");
 $("#stime").onclick=()=>{const a=$("#t1").value,b=$("#t2").value,c=$("#t3").value;if(!(a&&b&&c&&a<b&&b<c))return toast("Times must be in order: start < late < absent.","err");save({start:a,late:b,absent:c},"Times saved")};
-async function loadHol(){const h=(await getDocs(collection(db,"holidays"))).docs.map(x=>x.data()).sort((a,b)=>a.date.localeCompare(b.date));
- $("#hlist").innerHTML=h.length?`<table>${h.map(x=>`<tr><td>${x.date}</td><td>${esc(x.name)}</td><td><button class="sec" data-e="${x.date}" data-n="${esc(x.name)}">Edit</button> <button class="del" data-d="${x.date}">Delete</button></td></tr>`).join("")}</table>`:"<p class='muted'>No holidays yet.</p>"}
-$("#hadd").onclick=async()=>{const d=$("#hd").value,n=$("#hn").value.trim();if(!d||!n)return toast("Enter a date and a name.","err");
- try{await setDoc(doc(db,"holidays",d),{date:d,name:n,updatedAt:new Date().toISOString()});toast("Holiday saved");loadHol()}catch(e){toast("Save failed: "+e.message,"err")}};
-$("#hlist").onclick=async e=>{const b=e.target;if(b.dataset.e){$("#hd").value=b.dataset.e;$("#hn").value=b.dataset.n}
- if(b.dataset.d&&await confirmBox("Delete holiday "+b.dataset.d+"?","Delete")){try{await deleteDoc(doc(db,"holidays",b.dataset.d));loadHol()}catch(x){toast(x.message,"err")}}};
+let editRid=null,HOL=[];
+const addDays=(d,n)=>{const t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
+function rangeDates(a,b){const o=[];for(let d=a;d<=b;d=addDays(d,1))o.push(d);return o}
+async function batchOps(ops){for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}}
+async function loadHol(){HOL=(await getDocs(collection(db,"holidays"))).docs.map(x=>x.data()).sort((a,b)=>a.date.localeCompare(b.date));
+ const g=new Map();HOL.forEach(x=>{const k=x.rid||x.date;if(!g.has(k))g.set(k,{rid:k,name:x.name,dates:[]});g.get(k).dates.push(x.date)});
+ const R=[...g.values()].map(r=>({...r,from:r.dates[0],to:r.dates[r.dates.length-1]}));
+ $("#hlist").innerHTML=R.length?`<table><tr><th>From</th><th>To</th><th>Days</th><th>Name</th><th></th></tr>${R.map(r=>`<tr><td>${r.from}</td><td>${r.to}</td><td>${r.dates.length}</td><td>${esc(r.name)}</td><td><button class="sec" data-e="${esc(r.rid)}">Edit</button> <button class="del" data-d="${esc(r.rid)}">Delete</button></td></tr>`).join("")}</table>`:"<p class='muted'>No holidays yet.</p>"}
+function resetHol(){editRid=null;$("#hd").value=$("#he").value=$("#hn").value="";$("#hadd").textContent="Save holiday";$("#hcancel").hidden=true}
+$("#hcancel").onclick=resetHol;
+$("#hd").onchange=()=>{if(!$("#he").value||$("#he").value<$("#hd").value)$("#he").value=$("#hd").value};
+$("#hadd").onclick=async()=>{const a=$("#hd").value,b=$("#he").value||a,n=$("#hn").value.trim();if(!a||!n)return toast("Choose the start date and enter a name.","err");
+ if(b<a)return toast("The end date cannot be before the start date.","err");const ds=rangeDates(a,b);if(ds.length>366)return toast("A holiday can be at most 366 days.","err");
+ const clash=HOL.find(x=>ds.includes(x.date)&&(x.rid||x.date)!==editRid);if(clash)return toast(`${clash.date} already belongs to "${clash.name}".`,"err");
+ const rid=editRid||a+"_"+Math.random().toString(36).slice(2,7),now=new Date().toISOString(),keep=new Set(ds);
+ const ops=[...HOL.filter(x=>(x.rid||x.date)===editRid&&!keep.has(x.date)).map(x=>bt=>bt.delete(doc(db,"holidays",x.date))),...ds.map(d=>bt=>bt.set(doc(db,"holidays",d),{date:d,name:n,rid,start:a,end:b,updatedAt:now}))];
+ try{await batchOps(ops);toast("Holiday saved");resetHol();await loadHol();watchClass()}catch(x){toast("Save failed: "+x.message+". Press save again to finish.","err")}};
+$("#hlist").onclick=async e=>{const t=e.target,id=t.dataset.e||t.dataset.d;if(!id)return;const mine=HOL.filter(x=>(x.rid||x.date)===id);if(!mine.length)return;
+ if(t.dataset.e){editRid=id;$("#hd").value=mine[0].date;$("#he").value=mine[mine.length-1].date;$("#hn").value=mine[0].name;$("#hadd").textContent="Update holiday";$("#hcancel").hidden=false;$("#hd").scrollIntoView({block:"center"});return}
+ if(!await confirmBox(`<h2>Delete holiday?</h2><p><b>${esc(mine[0].name)}</b><br>${mine[0].date} to ${mine[mine.length-1].date} (${mine.length} days)</p>`,"Delete"))return;
+ try{await batchOps(mine.map(x=>bt=>bt.delete(doc(db,"holidays",x.date))));toast("Holiday deleted");if(editRid===id)resetHol();await loadHol();watchClass()}catch(x){toast("Deletion incomplete: "+x.message,"err")}};
 async function delDocs(refs){for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit()}}
 $("#dsb").onclick=()=>{const q=$("#ds").value.trim().toLowerCase();const r=q?ST.filter(s=>s.StudentName.toLowerCase().includes(q)||s.IC.includes(q)):[];
  $("#dres").innerHTML=r.length?`<table>${r.map(s=>`<tr><td>${esc(s.StudentName)}</td><td>${s.IC}</td><td>${esc(s.Class)}</td><td><button class="del" data-ic="${s.IC}">Delete</button></td></tr>`).join("")}</table>`:"<p class='muted'>No matching students.</p>"};
