@@ -33,7 +33,7 @@ dialog{max-width:92vw;width:480px;border:0;border-radius:20px;padding:1.4rem;box
 <div id="big" style="font-size:clamp(1.8rem,7vw,3.5rem);font-weight:800;margin:1rem 0;min-height:7rem;border-radius:24px;background:#eef7f4;display:flex;align-items:center;justify-content:center;padding:1rem;transition:background .3s" aria-live="assertive">Ready</div><div id="who" style="font-size:1.4rem;min-height:2rem"></div>
 <div class="row chips" style="justify-content:center;margin:.4rem 0 1rem"><button id="mUsb" style="flex:0 0 auto">USB scanner</button><button id="mCam" class="sec" style="flex:0 0 auto">Camera</button></div>
 <div id="usbBox"><label for="scan" class="muted">Scan input (keep this page focused)</label><input id="scan" autocomplete="off" style="max-width:360px;text-align:center;font-size:1.3rem"></div>
-<div id="camBox" hidden style="max-width:380px;margin:auto"><video id="vid" playsinline muted style="width:100%;border-radius:18px;background:#000;box-shadow:var(--sh);cursor:crosshair"></video><div class="row chips" style="justify-content:center;margin-top:.5rem"><button id="mirror" class="sec" style="flex:0 0 auto">Mirror: off</button></div><p class="muted">Hold the student's QR code in front of the camera. Tap the video to refocus (if the camera supports it). Camera needs HTTPS or localhost.</p></div>
+<div id="camBox" hidden style="max-width:380px;margin:auto"><video id="vid" playsinline muted style="width:100%;border-radius:18px;background:#000;box-shadow:var(--sh);cursor:crosshair"></video><div class="row chips" style="justify-content:center;margin-top:.5rem"><button id="mirror" class="sec" style="flex:0 0 auto">Mirror: off</button></div><div id="camStat" class="muted"></div><p class="muted">Hold the student's QR code in front of the camera. Tap the video to refocus (if the camera supports it). Camera needs HTTPS or localhost.</p></div>
 <p>Today: <span class="PRESENT">Present <b id="tp">0</b></span> · <span class="LATE">Late <b id="tl">0</b></span> · <span class="ABSENT">Absent <b id="ta">0</b></span></p></section></main>
 <dialog id="set"><form method="dialog"><h2>Scanner settings</h2>
 <label><input type="checkbox" id="wake" style="width:auto;min-height:0"> Keep screen awake</label><p class="muted" id="wakeNote">Browser and OS policies may still dim or sleep the screen.</p>
@@ -52,7 +52,7 @@ main>section p{margin:.2rem 0}
 @media (max-height:600px){#usbBox label{display:none}}
 dialog{max-height:92dvh;overflow:auto}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';document.head.appendChild(s)"></script>
 <script type="module">
 import {initializeApp,getApps,getApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {getFirestore,doc,getDoc,setDoc,getDocs,collection,query,where,deleteDoc,runTransaction,writeBatch,onSnapshot} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
@@ -83,7 +83,7 @@ let mode=localStorage.getItem("mode")==="cam"?"cam":"usb",stream=null,camT=null,
 const vid=$("#vid"),cvs=document.createElement("canvas"),ctx=cvs.getContext("2d",{willReadFrequently:true});
 const det="BarcodeDetector" in window?new BarcodeDetector({formats:["qr_code"]}):null;
 function setMode(m){mode=m;localStorage.setItem("mode",m);$("#mUsb").className=m==="usb"?"":"sec";$("#mCam").className=m==="cam"?"":"sec";$("#usbBox").hidden=m!=="usb";$("#camBox").hidden=m!=="cam";if(m==="cam")startCam();else{stopCam();scanEl.focus()}}
-async function startCam(){if(stream)return;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});vid.srcObject=stream;await vid.play();camT=setInterval(camTick,250);contFocus()}catch(e){stream=null;toast("Camera unavailable: "+e.message,"err");setMode("usb")}}
+async function startCam(){if(stream)return;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});vid.srcObject=stream;await vid.play();camT=setInterval(camTick,250);camStatus();try{contFocus()}catch(_){}}catch(e){stream=null;toast("Camera unavailable: "+e.message,"err");setMode("usb")}}
 let mir=localStorage.getItem("mirror")==="1";
 function applyMirror(){vid.style.transform=mir?"scaleX(-1)":"";$("#mirror").textContent="Mirror: "+(mir?"on":"off")}
 $("#mirror").onclick=()=>{mir=!mir;localStorage.setItem("mirror",mir?"1":"0");applyMirror()};applyMirror();
@@ -93,10 +93,13 @@ vid.addEventListener("click",async e=>{if(!stream)return;const c=caps();if(!(c.f
  const r=vid.getBoundingClientRect();let x=(e.clientX-r.left)/r.width;if(mir)x=1-x;const y=(e.clientY-r.top)/r.height,t=stream.getVideoTracks()[0];
  try{await t.applyConstraints({advanced:[{focusMode:"single-shot",pointsOfInterest:[{x,y}]}]});setTimeout(()=>stream&&contFocus(),1500)}catch(x2){toast("Refocus failed on this camera.","err")}});
 function stopCam(){clearInterval(camT);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;vid.srcObject=null}
-async function camTick(){if(busy||scanEl.disabled||vid.readyState<2)return;busy=true;try{let v=null;
- if(det){const c=await det.detect(vid);v=c[0]&&c[0].rawValue}
- else if(window.jsQR){cvs.width=vid.videoWidth;cvs.height=vid.videoHeight;ctx.drawImage(vid,0,0);const im=ctx.getImageData(0,0,cvs.width,cvs.height),q=jsQR(im.data,im.width,im.height);v=q&&q.data}
- if(v&&!(v===lastCode&&Date.now()-lastAt<3000)){lastCode=v;lastAt=Date.now();await processScan(v)}}catch(e){}finally{busy=false}}
+async function decodeFrame(){let v=null;
+ if(det){try{const c=await det.detect(vid);v=c[0]&&c[0].rawValue}catch(e){}}
+ if(!v&&window.jsQR){const w=Math.min(vid.videoWidth,960),k=w/vid.videoWidth;cvs.width=w;cvs.height=Math.round(vid.videoHeight*k);ctx.drawImage(vid,0,0,cvs.width,cvs.height);const im=ctx.getImageData(0,0,cvs.width,cvs.height),q=jsQR(im.data,im.width,im.height,{inversionAttempts:"attemptBoth"});v=q&&q.data}
+ return v}
+function camStatus(){const ok=det||window.jsQR;const e=$("#camStat");e.textContent=ok?"Looking for a QR code… ("+(det?"BarcodeDetector + ":"")+(window.jsQR?"jsQR":"")+")":"QR decoder not available - check the internet connection and reload.";e.style.color=ok?"":"var(--a)"}
+async function camTick(){if(busy||vid.readyState<2||!vid.videoWidth)return;busy=true;try{const v=await decodeFrame();
+ if(v&&!(v===lastCode&&Date.now()-lastAt<3000)){lastCode=v;lastAt=Date.now();await processScan(v)}}catch(e){$("#camStat").textContent="Decode error: "+e.message}finally{busy=false}}
 $("#mUsb").onclick=()=>setMode("usb");$("#mCam").onclick=()=>setMode("cam");
 const COL={PRESENT:"#16a05d",LATE:"#d98200",ABSENT:"#d6352b",bad:"#d6352b",pause:"#52665f"};
 function show(k,msg,who=""){const b=$("#big");b.textContent=msg;b.style.background=COL[k]||"#eef7f4";b.style.color=COL[k]?"#fff":"var(--ink)";b.style.animation="none";b.offsetWidth;b.style.animation="pulse .4s";$("#who").textContent=who;clearTimeout(show.t);show.t=setTimeout(()=>{b.textContent="Ready";b.style.background="#eef7f4";b.style.color="var(--ink)";$("#who").textContent=""},6000)}
@@ -116,7 +119,7 @@ async function runAbsence(d){ // idempotent, overdue-safe, today only
  await setDoc(pr,{date:d,doneAt:new Date().toISOString()});absDone=d;toast("Absence processing completed for "+d)}
  catch(e){toast("Absence processing failed: "+e.message,"err")}}
 async function processScan(raw){const ic=normIC(raw);if(!ic)return show("bad","Invalid IC");
- try{const n=myNow();await refresh();if(scanEl.disabled)return show("pause","Scanner closed");
+ try{const n=myNow();await refresh();if(scanEl.disabled)return show("pause",$("#state").textContent||"Scanner closed");
   const sd=await getDoc(doc(db,"students",ic));if(!sd.exists())return show("bad","Student not found");
   const s=sd.data();if(!kohOf(s.Class))return show("bad","Class not approved");
   if(n.time<S.start)return show("pause","Attendance opens at "+S.start);
