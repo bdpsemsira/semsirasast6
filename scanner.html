@@ -76,14 +76,14 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const dlgHTML=`<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="row" style="margin-top:1rem"><button class="sec" value="cancel">Cancel</button><button id="dlgOk" value="ok"></button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>`;
 document.body.insertAdjacentHTML("beforeend",dlgHTML);
 // ===== Scanner =====
-let S={...DEF},unsub=null,curDate="",wl=null,absDone="";
+let S={...DEF},unsub=null,curDate="",wl=null,absDone="";let schoolDay=false,sdDate="";
 const scanEl=$("#scan");
 // ----- input mode: USB scanner or camera -----
 let mode=localStorage.getItem("mode")==="cam"?"cam":"usb",stream=null,camT=null,busy=false,lastCode="",lastAt=0;
 const vid=$("#vid"),cvs=document.createElement("canvas"),ctx=cvs.getContext("2d",{willReadFrequently:true});
 const det="BarcodeDetector" in window?new BarcodeDetector({formats:["qr_code"]}):null;
 function setMode(m){mode=m;localStorage.setItem("mode",m);$("#mUsb").className=m==="usb"?"":"sec";$("#mCam").className=m==="cam"?"":"sec";$("#usbBox").hidden=m!=="usb";$("#camBox").hidden=m!=="cam";if(m==="cam")startCam();else{stopCam();scanEl.focus()}}
-async function startCam(){if(stream)return;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});vid.srcObject=stream;await vid.play();camT=setInterval(camTick,250);camStatus();try{contFocus()}catch(_){}}catch(e){stream=null;toast("Camera unavailable: "+e.message,"err");setMode("usb")}}
+async function startCam(){if(stream)return;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});vid.srcObject=stream;await vid.play();camLoop();camStatus();try{contFocus()}catch(_){}}catch(e){stream=null;toast("Camera unavailable: "+e.message,"err");setMode("usb")}}
 let mir=localStorage.getItem("mirror")==="1";
 function applyMirror(){vid.style.transform=mir?"scaleX(-1)":"";$("#mirror").textContent="Mirror: "+(mir?"on":"off")}
 $("#mirror").onclick=()=>{mir=!mir;localStorage.setItem("mirror",mir?"1":"0");applyMirror()};applyMirror();
@@ -95,18 +95,22 @@ vid.addEventListener("click",async e=>{if(!stream)return;const c=caps();if(!(c.f
 function stopCam(){clearInterval(camT);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;vid.srcObject=null}
 async function decodeFrame(){let v=null;
  if(det){try{const c=await det.detect(vid);v=c[0]&&c[0].rawValue}catch(e){}}
- if(!v&&window.jsQR){const w=Math.min(vid.videoWidth,960),k=w/vid.videoWidth;cvs.width=w;cvs.height=Math.round(vid.videoHeight*k);ctx.drawImage(vid,0,0,cvs.width,cvs.height);const im=ctx.getImageData(0,0,cvs.width,cvs.height),q=jsQR(im.data,im.width,im.height,{inversionAttempts:"attemptBoth"});v=q&&q.data}
+ if(!v&&window.jsQR){const w=Math.min(vid.videoWidth,640),k=w/vid.videoWidth;cvs.width=w;cvs.height=Math.round(vid.videoHeight*k);ctx.drawImage(vid,0,0,cvs.width,cvs.height);const im=ctx.getImageData(0,0,cvs.width,cvs.height),q=jsQR(im.data,im.width,im.height,{inversionAttempts:"dontInvert"});v=q&&q.data}
  return v}
 function camStatus(){const ok=det||window.jsQR;const e=$("#camStat");e.textContent=ok?"Looking for a QR code… ("+(det?"BarcodeDetector + ":"")+(window.jsQR?"jsQR":"")+")":"QR decoder not available - check the internet connection and reload.";e.style.color=ok?"":"var(--a)"}
-async function camTick(){if(busy||vid.readyState<2||!vid.videoWidth)return;busy=true;try{const v=await decodeFrame();
- if(v&&!(v===lastCode&&Date.now()-lastAt<3000)){lastCode=v;lastAt=Date.now();await processScan(v)}}catch(e){$("#camStat").textContent="Decode error: "+e.message}finally{busy=false}}
+let loopOn=false;
+async function camLoop(){if(loopOn)return;loopOn=true;
+ while(stream){if(vid.readyState>=2&&vid.videoWidth){try{const v=await decodeFrame();
+  if(v&&!(v===lastCode&&Date.now()-lastAt<2000)){lastCode=v;lastAt=Date.now();processScan(v)}}catch(e){$("#camStat").textContent="Decode error: "+e.message}}
+  await new Promise(r=>vid.requestVideoFrameCallback?vid.requestVideoFrameCallback(()=>r()):requestAnimationFrame(()=>r()))}
+ loopOn=false}
 $("#mUsb").onclick=()=>setMode("usb");$("#mCam").onclick=()=>setMode("cam");
 const COL={PRESENT:"#16a05d",LATE:"#d98200",ABSENT:"#d6352b",bad:"#d6352b",pause:"#52665f"};
-function show(k,msg,who=""){const b=$("#big");b.textContent=msg;b.style.background=COL[k]||"#eef7f4";b.style.color=COL[k]?"#fff":"var(--ink)";b.style.animation="none";b.offsetWidth;b.style.animation="pulse .4s";$("#who").textContent=who;clearTimeout(show.t);show.t=setTimeout(()=>{b.textContent="Ready";b.style.background="#eef7f4";b.style.color="var(--ink)";$("#who").textContent=""},6000)}
+function show(k,msg,who=""){const b=$("#big");b.textContent=msg;b.style.background=COL[k]||"#eef7f4";b.style.color=COL[k]?"#fff":"var(--ink)";b.style.animation="none";b.offsetWidth;b.style.animation="pulse .4s";$("#who").textContent=who;clearTimeout(show.t);show.t=setTimeout(()=>{b.textContent="Ready";b.style.background="#eef7f4";b.style.color="var(--ink)";$("#who").textContent=""},1000)}
 const isOpen=(t)=>t>=S.scanOpen&&t<S.scanClose;
 async function refresh(){const n=myNow();$("#clock").textContent=`${n.date} ${n.time}:${n.sec}`;
  if(n.date!==curDate){curDate=n.date;watch(n.date)}
- let sd=false;try{S=await getSettings();sd=await isSchoolDay(n.date)}catch(e){$("#state").textContent="System error: "+e.message;return}
+ let sd=false;try{S=await getSettings();sd=await isSchoolDay(n.date);schoolDay=sd;sdDate=n.date}catch(e){$("#state").textContent="System error: "+e.message;return}
  const on=sd&&isOpen(n.time);$("#state").textContent=!sd?"No school today":on?"Scanner active":"Scanner closed - resting";scanEl.disabled=!on;
  if(on&&mode==="usb"&&document.activeElement!==scanEl&&!$("#set").open)scanEl.focus();
  if(sd&&n.time>=S.absent&&absDone!==n.date)await runAbsence(n.date)}
@@ -119,16 +123,16 @@ async function runAbsence(d){ // idempotent, overdue-safe, today only
  await setDoc(pr,{date:d,doneAt:new Date().toISOString()});absDone=d;toast("Absence processing completed for "+d)}
  catch(e){toast("Absence processing failed: "+e.message,"err")}}
 async function processScan(raw){const ic=normIC(raw);if(!ic)return show("bad","Invalid IC");
- try{const n=myNow();await refresh();if(scanEl.disabled)return show("pause",$("#state").textContent||"Scanner closed");
-  const sd=await getDoc(doc(db,"students",ic));if(!sd.exists())return show("bad","Student not found");
-  const s=sd.data();if(!kohOf(s.Class))return show("bad","Class not approved");
+ try{let n=myNow();if(sdDate!==n.date)await refresh();n=myNow();
+  if(!schoolDay||!isOpen(n.time))return show("pause",!schoolDay?"No school today":"Scanner closed - resting");
   if(n.time<S.start)return show("pause","Attendance opens at "+S.start);
-  const r=doc(db,"attendance",ic+"_"+n.date),iso=new Date().toISOString();
-  const res=await runTransaction(db,async t=>{const a=await t.get(r);
-   if(a.exists()){const d=a.data();if(d.status==="ABSENT"&&!d.arrivalAt){t.update(r,{arrivalAt:iso});return{k:"ABSENT",m:"ABSENT (arrived after cut-off)"}}return{k:"dup",m:"Already scanned ("+d.status+")"}}
-   const st=n.time<S.late?"PRESENT":n.time<S.absent?"LATE":"ABSENT";
-   t.set(r,{studentId:ic,ic,name:s.StudentName,class:s.Class,kohort:s.Kohort,date:n.date,status:st,firstScanAt:iso,arrivalAt:iso,createdAt:iso,source:"scan"});return{k:st,m:st==="ABSENT"?"ABSENT (arrived after cut-off)":st}});
-  show(res.k==="dup"?"pause":res.k,res.m,s.StudentName)}
+  const sr=doc(db,"students",ic),r=doc(db,"attendance",ic+"_"+n.date),iso=new Date().toISOString();
+  const res=await runTransaction(db,async t=>{const[sd,a]=await Promise.all([t.get(sr),t.get(r)]);
+   if(!sd.exists())return{k:"bad",m:"Student not found"};const s=sd.data();if(!kohOf(s.Class))return{k:"bad",m:"Class not approved"};
+   if(a.exists()){const d=a.data();if(d.status==="ABSENT"&&!d.arrivalAt){t.update(r,{arrivalAt:iso});return{k:"ABSENT",m:"ABSENT (arrived after cut-off)",who:s.StudentName}}return{k:"dup",m:"Already scanned ("+d.status+")",who:s.StudentName}}
+   const stt=n.time<S.late?"PRESENT":n.time<S.absent?"LATE":"ABSENT";
+   t.set(r,{studentId:ic,ic,name:s.StudentName,class:s.Class,kohort:s.Kohort,date:n.date,status:stt,firstScanAt:iso,arrivalAt:iso,createdAt:iso,source:"scan"});return{k:stt,m:stt==="ABSENT"?"ABSENT (arrived after cut-off)":stt,who:s.StudentName}});
+  show(res.k==="dup"?"pause":res.k,res.m,res.who||"")}
  catch(e){show("bad","System error",e.message)}}
 scanEl.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=scanEl.value;scanEl.value="";if(v.trim())processScan(v);scanEl.focus()}});
 document.addEventListener("click",e=>{if(mode==="usb"&&!$("#set").open&&!e.target.closest("button"))scanEl.focus()});
